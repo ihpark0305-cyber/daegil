@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>대길 마법학교 ✨</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div id="stars"></div>
+<div id="app">
+
+<!-- ── LANDING ── -->
+<div id="screen-landing" class="screen on" style="display:flex;position:relative;overflow:hidden;">
+  <div id="particles"></div>
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;padding:24px;">
+    <div style="font-family:var(--f3);font-size:13px;color:var(--gold3);letter-spacing:.22em;">✦ DAEGIL SCHOOL OF MAGIC ✦</div>
+    <div class="env-wrap" onclick="openEnvelope()">
+      <div class="env-box">
+        <div class="env-body">
+          <div class="env-flap" id="env-flap"></div>
+          <span class="env-seal">🏰</span>
+          <span class="env-label">INVITATION</span>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:16px;color:var(--cream2)">봉투를 클릭해 초대장을 열어봐요 ✨</div>
+  </div>
+</div>
+
+<!-- ── INVITE LETTER ── -->
+<div class="letter-overlay" id="letter-overlay">
+  <div class="letter-card">
+    <div style="font-family:var(--f3);font-size:10px;color:var(--gold3);letter-spacing:.2em;margin-bottom:14px;">✦ OFFICIAL INVITATION ✦</div>
+    <span class="lc-crest">🏰</span>
+    <div class="lc-title">대길 마법학교</div>
+    <div class="lc-sub">DAEGIL SCHOOL OF MAGIC</div>
+    <div class="lc-body">당신에게 마법학교 입학을<br>진심으로 축하드립니다.<br><br>당신만의 정원을 가꾸고,<br>감정을 기록하며,<br>마법사로 성장해보세요 🌱</div>
+    <div class="lc-btns">
+      <button class="btn btn-gold" onclick="startOnboard()">입장하기 →</button>
+      <button class="btn btn-ghost btn-sm" onclick="startOnboard()">이미 마법사예요</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ONBOARDING ── -->
+<div id="screen-onboard" class="screen" style="display:none;">
+  <!-- 이름 -->
+  <div id="ob-name" class="ob-screen" style="display:flex;">
+    <div class="steps"><div class="step cur"></div><div class="step"></div><div class="step"></div><div class="step"></div></div>
+    <div class="ob-crest">🧙</div>
+    <div class="ob-title">마법사님의 이름을<br>알려주세요 ✨</div>
+    <div class="ob-sub">이름은 한 번만 입력하면 돼요<br>나중에도 기억해드릴게요 🌟</div>
+    <div class="ob-name-row">
+      <input class="inp" id="name-inp" placeholder="이름 입력" maxlength="12" onkeydown="if(event.key==='Enter')saveName()">
+      <button class="btn btn-gold btn-sm" onclick="saveName()">다음 →</button>
+    </div>
+    <button class="btn btn-ghost btn-sm mt8" onclick="saveNameAnon()">👻 익명으로 입장</button>
+  </div>
+  <!-- 퀴즈 -->
+  <div id="ob-quiz" class="ob-screen" style="display:none;"></div>
+  <!-- 분류 중 -->
+  <div id="ob-sorting" class="ob-screen" style="display:none;gap:20px;">
+    <div class="ob-title">✨ 마법 에너지 분석 중...</div>
+    <div id="sort-orb" class="sort-orb" style="color:var(--gold);background:radial-gradient(circle,rgba(212,175,55,.2),#1a0a3e)"></div>
+    <div style="font-family:var(--f2);font-size:18px;color:var(--cream2)">당신의 마법 유형을 찾고 있어요</div>
+  </div>
+  <!-- 결과 -->
+  <div id="ob-result" class="ob-screen" style="display:none;"></div>
+  <!-- 호흡 -->
+  <div id="ob-breath" class="ob-screen" style="display:none;gap:22px;">
+    <div style="font-family:var(--f2);font-size:21px;color:var(--gold);text-align:center;">🌬️ 마법 호흡 의식</div>
+    <div class="borb-wrap">
+      <div class="borb" id="breath-orb"></div>
+      <div class="borb-txt">
+        <div class="b-action" id="b-action">준비</div>
+        <div class="b-num" id="b-num">3</div>
+        <div class="b-cycle" id="b-cycle">0/3 사이클</div>
+      </div>
+    </div>
+    <div style="font-size:15px;color:var(--cream3);text-align:center;max-width:280px;line-height:1.8">호흡에 집중하며<br>마음을 고요하게 해봐요</div>
+    <button onclick="skipBreathing()" style="background:none;border:none;color:var(--cream3);cursor:pointer;font-size:14px;text-decoration:underline;">건너뛰기</button>
+  </div>
+  <!-- 프로필 -->
+  <div id="ob-profile" style="display:none;"></div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="screen-main" class="screen" style="display:none;">
+  <nav class="nav">
+    <div class="nav-brand">✦ 대길 마법학교</div>
+    <button class="nb" data-page="garden" onclick="go('garden')">🌱 정원</button>
+    <button class="nb" data-page="square" onclick="go('square')">🏛️ 광장</button>
+    <button class="nb" data-page="gallery" onclick="go('gallery')">🖼️ 갤러리</button>
+    <button class="nb" data-page="record" onclick="go('record')">📅 기록</button>
+    <button class="nb" data-page="admin" onclick="go('admin')">⚙️ 관리</button>
+    <div class="nav-r">
+      <span class="nav-plant" id="nav-plant">🌱</span>
+      <span class="nav-nm" id="nav-nm"></span>
+    </div>
+  </nav>
+
+  <!-- 정원 -->
+  <div id="page-garden" class="page"></div>
+
+  <!-- 광장 -->
+  <div id="page-square" class="page" style="display:none;">
+    <div class="post-form-wrap">
+      <div class="section-title" style="margin-bottom:10px">✍️ 오늘의 한마디</div>
+      <textarea id="post-inp" class="inp" placeholder="마법사들과 나누고 싶은 이야기..." rows="3"></textarea>
+      <input id="post-yt-url" class="inp mt8" placeholder="🎬 유튜브 링크 붙여넣기 (선택)" oninput="checkYT()">
+      <div id="yt-prev" class="yt-preview"><img src="" alt="유튜브 미리보기"></div>
+      <div id="post-cats" class="feed-cats">
+        <button class="cat-btn on" data-cat="일상" onclick="curPostCat='일상';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='일상'))">일상</button>
+        <button class="cat-btn" data-cat="감정" onclick="curPostCat='감정';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='감정'))">감정</button>
+        <button class="cat-btn" data-cat="음악" onclick="curPostCat='음악';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='음악'))">🎵 음악</button>
+        <button class="cat-btn" data-cat="운동" onclick="curPostCat='운동';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='운동'))">🏃 운동</button>
+        <button class="cat-btn" data-cat="응원" onclick="curPostCat='응원';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='응원'))">응원</button>
+        <button class="cat-btn" data-cat="고민" onclick="curPostCat='고민';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='고민'))">고민</button>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="submitPost()">올리기 ✨</button>
+    </div>
+    <div class="flex sb ac" style="margin-bottom:12px;">
+      <div class="section-title" style="margin:0">✦ 마법사들의 광장</div>
+    </div>
+    <div class="feed-cats">
+      <button class="cat-btn on" data-cat="all" onclick="loadPosts('all')">전체</button>
+      <button class="cat-btn" data-cat="일상" onclick="loadPosts('일상')">일상</button>
+      <button class="cat-btn" data-cat="감정" onclick="loadPosts('감정')">감정</button>
+      <button class="cat-btn" data-cat="음악" onclick="loadPosts('음악')">🎵 음악</button>
+      <button class="cat-btn" data-cat="운동" onclick="loadPosts('운동')">🏃 운동</button>
+      <button class="cat-btn" data-cat="응원" onclick="loadPosts('응원')">응원</button>
+      <button class="cat-btn" data-cat="고민" onclick="loadPosts('고민')">고민</button>
+    </div>
+    <div id="feed"></div>
+  </div>
+
+  <!-- 갤러리 -->
+  <div id="page-gallery" class="page" style="display:none;">
+    <div class="section-title">✦ 마법사 졸업 앨범</div>
+    <div class="gallery-filter">
+      <button class="cat-btn on" data-type="all" onclick="loadGallery('all')">전체</button>
+      <button class="cat-btn" data-type="수호 마법사" onclick="loadGallery('수호 마법사')">🦁 수호</button>
+      <button class="cat-btn" data-type="지혜 마법사" onclick="loadGallery('지혜 마법사')">🦉 지혜</button>
+      <button class="cat-btn" data-type="빛 마법사" onclick="loadGallery('빛 마법사')">🌟 빛</button>
+      <button class="cat-btn" data-type="치유 마법사" onclick="loadGallery('치유 마법사')">🌿 치유</button>
+      <button class="cat-btn" data-type="열정 마법사" onclick="loadGallery('열정 마법사')">🔥 열정</button>
+      <button class="cat-btn" data-type="자유 마법사" onclick="loadGallery('자유 마법사')">💫 자유</button>
+      <button class="cat-btn" data-type="고요 마법사" onclick="loadGallery('고요 마법사')">🌙 고요</button>
+      <button class="cat-btn" data-type="창조 마법사" onclick="loadGallery('창조 마법사')">🎨 창조</button>
+    </div>
+    <div class="gallery-grid" id="gallery-grid"></div>
+  </div>
+
+  <!-- 기록 -->
+  <div id="page-record" class="page" style="display:none;">
+    <div class="stat-grid" id="stats-grid"></div>
+    <div id="cal-container"></div>
+    <div class="post-form-wrap" style="margin-bottom:16px;">
+      <div class="section-title" style="margin-bottom:10px">📝 오늘의 일기</div>
+      <textarea id="diary-inp" class="inp" placeholder="오늘 하루 어땠나요? 자유롭게 써봐요..." rows="4"></textarea>
+      <button class="btn btn-gold btn-sm" id="diary-save-btn" onclick="saveDiary()" style="margin-top:10px">저장하기 ✨</button>
+    </div>
+    <div class="section-title">📖 지난 기록</div>
+    <div id="diary-list"></div>
+  </div>
+
+  <!-- 관리자 -->
+  <div id="page-admin" class="page" style="display:none;">
+    <div class="section-title">⚙️ 관리자 화면</div>
+    <div class="admin-card" style="margin-bottom:14px;">
+      <div class="admin-title">📊 마법사 현황</div>
+      <div style="font-size:28px;font-weight:900;color:var(--gold);margin-bottom:12px" id="admin-total">-</div>
+      <div class="dist-chart" id="dist-chart"></div>
+    </div>
+    <div class="admin-card" style="margin-bottom:14px;">
+      <div class="admin-title">🎬 진행 단계 컨트롤</div>
+      <div class="stage-btns" id="stage-btns"></div>
+    </div>
+    <div class="admin-card">
+      <div class="admin-title">📱 QR 코드</div>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div class="qr-box"><img id="qr-img" width="160" height="160" alt="QR"></div>
+        <div>
+          <div style="font-size:14px;color:var(--cream3);margin-bottom:6px">앱 URL</div>
+          <div id="qr-url" style="font-family:var(--f3);font-size:13px;color:var(--gold);word-break:break-all"></div>
+          <button class="btn btn-ghost btn-xs mt8" onclick="navigator.clipboard.writeText(location.origin).then(()=>toast('복사됨!'))">복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /screen-main -->
+
+</div><!-- /app -->
+
+<!-- 신분증 수정 모달 -->
+<div class="overlay" id="overlay-edit" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">✏️ 신분증 수정</div>
+    <div class="sec"><label>나의 마법 ✨</label><input class="inp" id="edit-skill" placeholder="내가 잘하는 것"></div>
+    <div class="sec"><label>좋아하는 것 💛</label><input class="inp" id="edit-fav" placeholder="좋아하는 것"></div>
+    <div class="sec"><label>나에게 하는 주문 🔮</label><input class="inp" id="edit-spell" placeholder="오늘의 주문"></div>
+    <div class="flex gap8 mt16">
+      <button class="btn btn-gold btn-sm w100" onclick="saveEditCard()">저장 ✨</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeOverlay('overlay-edit')">취소</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

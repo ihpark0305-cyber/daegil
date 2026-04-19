@@ -99,6 +99,17 @@ function getAvatarUrl(name,gender){
   return `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&backgroundColor=e0e7ff,fce7f3,f0fdf4`;
 }
 
+// ── 활동 카운트 서버 동기화 ──────────────────
+async function incActivity(){
+  if(!me)return;
+  me.activity_count=(me.activity_count||0)+1;
+  localStorage.setItem('me_cache',JSON.stringify(me));
+  try{
+    await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:me.id,activity_count:me.activity_count})});
+  }catch(e){}
+}
+
 // ── 물주기 ────────────────────────────────
 function getWaterData(){
   const today=new Date().toISOString().slice(0,10);
@@ -114,12 +125,7 @@ async function waterPlant(){
   w.count++;saveWaterData(w);
   const wrap=$('plant-svg-wrap');
   if(wrap){wrap.classList.add('water-shake');setTimeout(()=>wrap.classList.remove('water-shake'),600);}
-  try{
-    await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:me.id,activity_count:(me.activity_count||0)+1})});
-    me.activity_count=(me.activity_count||0)+1;
-    localStorage.setItem('me_cache',JSON.stringify(me));
-  }catch(e){}
+  await incActivity();
   toast(`물을 줬어요 💧 (${w.count}/3)`);
   const btn=$('water-btn');
   if(btn){btn.textContent=`💧 물주기 (${w.count}/3)`;if(w.count>=3){btn.disabled=true;btn.style.opacity='.4';}}
@@ -535,8 +541,7 @@ function renderGarden(){
 async function saveEmotion(emo){
   todayEmo=emo;
   try{await fetch('/api/emotion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:me.id,emotion:emo})});}catch(e){}
-  me.activity_count=(me.activity_count||0)+1;
-  localStorage.setItem('me_cache',JSON.stringify(me));
+  await incActivity();
   toast('감정을 기록했어요 '+emo);
   renderGarden();
 }
@@ -673,8 +678,7 @@ async function submitPost(){
     if(!r.ok||!d.ok) throw new Error(d.error||'서버 오류 '+r.status);
     ta.value='';if(yt)yt.value='';
     const prev=$('yt-prev');if(prev)prev.style.display='none';
-    me.activity_count=(me.activity_count||0)+1;
-    localStorage.setItem('me_cache',JSON.stringify(me));
+    await incActivity();
     toast('게시글을 올렸어요 ✨');
     closePostModal();
     loadPosts();
@@ -890,8 +894,7 @@ async function saveDiary(){
   try{
     await fetch('/api/diary',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:me.id,content})});
     $('diary-inp').value='';
-    me.activity_count=(me.activity_count||0)+1;
-    localStorage.setItem('me_cache',JSON.stringify(me));
+    await incActivity();
     toast('일기를 저장했어요 📝');confetti();
     await loadDiaries();await renderCalendar();renderStats();
   }catch(e){toast('저장 실패');}

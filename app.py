@@ -346,7 +346,7 @@ def cheer_post(pid):
 def gallery():
     mtype = request.args.get("type", "all")
     try:
-        q = sb.table("users").select("id,name,magic_type,card_color,plant_stage,activity_count,magic_skill,favorite,my_spell").order("total_visits", desc=True).limit(100)
+        q = sb.table("users").select("id,name,magic_type,card_color,plant_stage,activity_count,magic_skill,favorite,my_spell,gender,plant_type").order("total_visits", desc=True).limit(100)
         if mtype != "all":
             q = q.eq("magic_type", mtype)
         res = q.execute()

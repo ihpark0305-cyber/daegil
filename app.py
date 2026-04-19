@@ -163,6 +163,8 @@ def user_enter():
                 "magic_skill": None,
                 "favorite": None,
                 "my_spell": None,
+                "gender": "미선택",
+                "plant_type": None,
             }
             sb.table("users").insert(user).execute()
 
@@ -176,7 +178,7 @@ def user_update():
     data = request.json or {}
     uid = data.get("id")
     upd = {}
-    for k in ["magic_type", "card_color", "magic_skill", "favorite", "my_spell"]:
+    for k in ["magic_type", "card_color", "magic_skill", "favorite", "my_spell", "gender", "plant_type", "activity_count"]:
         if k in data:
             upd[k] = data[k]
     if not uid or not upd:

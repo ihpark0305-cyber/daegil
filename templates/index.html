@@ -108,14 +108,14 @@
   <!-- 정원 -->
   <div id="page-garden" class="page"></div>
 
-  <!-- 광장 -->
-  <div id="page-square" class="page" style="display:none;">
-    <div class="post-form-wrap">
-      <div class="section-title" style="margin-bottom:10px">✍️ 오늘의 한마디</div>
-      <textarea id="post-inp" class="inp" placeholder="마법사들과 나누고 싶은 이야기..." rows="3"></textarea>
+  <!-- 광장 포스트 모달 -->
+  <div class="overlay" id="post-modal" style="display:none;">
+    <div class="modal">
+      <div class="modal-title">✍️ 오늘의 한마디</div>
+      <textarea id="post-inp" class="inp" placeholder="마법사들과 나누고 싶은 이야기..." rows="4"></textarea>
       <input id="post-yt-url" class="inp mt8" placeholder="🎬 유튜브 링크 붙여넣기 (선택)" oninput="checkYT()">
       <div id="yt-prev" class="yt-preview"><img src="" alt="유튜브 미리보기"></div>
-      <div id="post-cats" class="feed-cats">
+      <div id="post-cats" class="feed-cats" style="margin-top:10px">
         <button class="cat-btn on" data-cat="일상" onclick="curPostCat='일상';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='일상'))">일상</button>
         <button class="cat-btn" data-cat="감정" onclick="curPostCat='감정';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='감정'))">감정</button>
         <button class="cat-btn" data-cat="음악" onclick="curPostCat='음악';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='음악'))">🎵 음악</button>
@@ -123,21 +123,31 @@
         <button class="cat-btn" data-cat="응원" onclick="curPostCat='응원';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='응원'))">응원</button>
         <button class="cat-btn" data-cat="고민" onclick="curPostCat='고민';$qa('#post-cats .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat==='고민'))">고민</button>
       </div>
-      <button class="btn btn-gold btn-sm" onclick="submitPost()">올리기 ✨</button>
+      <div class="flex gap8 mt16">
+        <button class="btn btn-gold w100" onclick="submitPost()">올리기 ✨</button>
+        <button class="btn btn-ghost btn-sm" onclick="closePostModal()">취소</button>
+      </div>
     </div>
-    <div class="flex sb ac" style="margin-bottom:12px;">
-      <div class="section-title" style="margin:0">✦ 마법사들의 광장</div>
+  </div>
+
+  <!-- 광장 (릴스) -->
+  <div id="page-square" class="page" style="display:none;">
+    <div class="reels-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:4px">
+        <div class="section-title" style="margin:0">✦ 마법사들의 광장</div>
+      </div>
+      <div class="reel-filter">
+        <button class="cat-btn on" data-cat="all" onclick="loadPosts('all')">전체</button>
+        <button class="cat-btn" data-cat="일상" onclick="loadPosts('일상')">일상</button>
+        <button class="cat-btn" data-cat="감정" onclick="loadPosts('감정')">감정</button>
+        <button class="cat-btn" data-cat="음악" onclick="loadPosts('음악')">🎵 음악</button>
+        <button class="cat-btn" data-cat="운동" onclick="loadPosts('운동')">🏃 운동</button>
+        <button class="cat-btn" data-cat="응원" onclick="loadPosts('응원')">응원</button>
+        <button class="cat-btn" data-cat="고민" onclick="loadPosts('고민')">고민</button>
+      </div>
     </div>
-    <div class="feed-cats">
-      <button class="cat-btn on" data-cat="all" onclick="loadPosts('all')">전체</button>
-      <button class="cat-btn" data-cat="일상" onclick="loadPosts('일상')">일상</button>
-      <button class="cat-btn" data-cat="감정" onclick="loadPosts('감정')">감정</button>
-      <button class="cat-btn" data-cat="음악" onclick="loadPosts('음악')">🎵 음악</button>
-      <button class="cat-btn" data-cat="운동" onclick="loadPosts('운동')">🏃 운동</button>
-      <button class="cat-btn" data-cat="응원" onclick="loadPosts('응원')">응원</button>
-      <button class="cat-btn" data-cat="고민" onclick="loadPosts('고민')">고민</button>
-    </div>
-    <div id="feed"></div>
+    <div id="feed" class="reels-feed"></div>
+    <button class="reels-fab" id="reels-fab" onclick="openPostModal()">+</button>
   </div>
 
   <!-- 갤러리 -->
@@ -202,6 +212,13 @@
 <div class="overlay" id="overlay-edit" style="display:none;">
   <div class="modal">
     <div class="modal-title">✏️ 신분증 수정</div>
+    <div class="sec"><label>성 별</label>
+      <select class="inp" id="edit-gender" style="height:48px">
+        <option value="미선택">미선택</option>
+        <option value="남">남</option>
+        <option value="여">여</option>
+      </select>
+    </div>
     <div class="sec"><label>나의 마법 ✨</label><input class="inp" id="edit-skill" placeholder="내가 잘하는 것"></div>
     <div class="sec"><label>좋아하는 것 💛</label><input class="inp" id="edit-fav" placeholder="좋아하는 것"></div>
     <div class="sec"><label>나에게 하는 주문 🔮</label><input class="inp" id="edit-spell" placeholder="오늘의 주문"></div>

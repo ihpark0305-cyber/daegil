@@ -88,15 +88,13 @@ const $=id=>document.getElementById(id);
 const $q=sel=>document.querySelector(sel);
 const $qa=sel=>document.querySelectorAll(sel);
 
-// ── 아바타 ────────────────────────────────
-function getAvatarUrl(name,gender){
-  const seed=encodeURIComponent(name||'마법사');
-  // 여: lorelei — 지브리풍 애니메이션 여성 캐릭터, 동양 피부톤
-  if(gender==='여') return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}&skinColor=eac393,f5cfa0&backgroundColor=b6e3f4,fecaca,ddd6fe,fde68a`;
-  // 남: adventurer — 애니메이션 스타일, 어두운 머리/동양 피부
-  if(gender==='남') return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&skinColor=eac393,f5cfa0&hairColor=0e0e0e,2c1b18,3b2314&backgroundColor=bfdbfe,bbf7d0,c7f2fa`;
-  // 기본: lorelei-neutral
-  return `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&backgroundColor=e0e7ff,fce7f3,f0fdf4`;
+// ── 아바타 스프라이트 ──────────────────────
+// avatars.jpg = 4열×2행 (남0~3 상단, 여0~3 하단)
+function getAvatarHtml(name, gender){
+  const hash=(name||'마법사').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const col=hash%4;
+  const row=(gender==='여')?1:(gender==='남')?0:hash%2;
+  return `<div class="avatar-sprite-wrap"><img src="/static/img/avatars.jpg" class="avatar-sprite" style="left:-${col*100}%;top:-${row*100}%" alt=""></div>`;
 }
 
 // ── 활동 카운트 서버 동기화 ──────────────────
@@ -373,10 +371,9 @@ function showProfile(){
     <div class="cdot ${c===selColor?'sel':''}" data-color="${c}" style="background:${c}" onclick="pickColor('${c}')"></div>`).join('');
   const name=localStorage.getItem('magic_name')||'마법사';
   const savedPhoto=localStorage.getItem('my_photo');
-  const avatarSrc=getAvatarUrl(name,selGender);
   const photoEl=savedPhoto
-    ?`<img id="photo-preview" src="${savedPhoto}" style="width:80px;height:100px;object-fit:cover;border-radius:10px;border:2px solid var(--gold3)">`
-    :`<img id="photo-preview" src="${avatarSrc}" style="width:80px;height:100px;object-fit:cover;border-radius:10px;border:2px solid var(--gold3)" onerror="this.style.display='none'">`;
+    ?`<img id="photo-preview" src="${savedPhoto}" style="width:88px;height:110px;object-fit:cover;border-radius:10px;border:2px solid var(--gold3)">`
+    :`<div id="photo-preview" style="width:88px;height:110px;border-radius:10px;border:2px solid var(--gold3);overflow:hidden">${getAvatarHtml(name,selGender)}</div>`;
   $('ob-profile').innerHTML=`
     <div class="ob-screen" style="padding-top:20px;overflow-y:auto;">
       <div class="steps"><div class="step done"></div><div class="step done"></div><div class="step done"></div><div class="step cur"></div></div>
@@ -416,8 +413,7 @@ function pickGender(g){
   const prev=$('photo-preview');
   if(prev&&!localStorage.getItem('my_photo')){
     const name=localStorage.getItem('magic_name')||'마법사';
-    prev.src=getAvatarUrl(name,g);
-    prev.style.display='block';
+    prev.innerHTML=getAvatarHtml(name,g);
   }
 }
 function handlePhotoUpload(input){
@@ -736,10 +732,9 @@ async function loadGallery(type='all'){
       const mt=typeInfo(u.magic_type);
       const isMe=me&&u.id===me.id;
       const myPhoto=isMe?localStorage.getItem('my_photo'):null;
-      const avatarSrc=getAvatarUrl(u.name,u.gender);
       const photoEl=myPhoto
         ?`<img src="${myPhoto}" class="idn-photo-img">`
-        :`<img src="${avatarSrc}" class="idn-photo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="idn-photo-fb" style="display:none">${u.gender==='여'?'👩':'👨'}</div>`;
+        :getAvatarHtml(u.name,u.gender||'미선택');
       return `<div class="idn-card" style="--card-color:${u.card_color||'#1a4a1a'}">
         <div class="idn-hdr">
           <span class="idn-school">✦ 대길 마법학교 신분증 ✦</span>

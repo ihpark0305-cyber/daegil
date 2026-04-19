@@ -146,8 +146,13 @@
         <button class="cat-btn" data-cat="고민" onclick="loadPosts('고민')">고민</button>
       </div>
     </div>
-    <div id="feed" class="reels-feed"></div>
+    <div id="feed" class="feed-grid"></div>
     <button class="reels-fab" id="reels-fab" onclick="openPostModal()">+</button>
+  </div>
+
+  <!-- 피드 상세 모달 -->
+  <div id="feed-detail-modal" onclick="closeFeedDetail()">
+    <div id="feed-detail-body" onclick="event.stopPropagation()"></div>
   </div>
 
   <!-- 갤러리 -->

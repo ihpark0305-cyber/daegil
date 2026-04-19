@@ -81,6 +81,7 @@ const CAT_GRADIENTS={
 let me=null, curPage='garden', todayEmo=null, breathIv=null;
 let quizScores={}, selType=null, selColor=CARD_COLORS[0], selGender='미선택';
 let curPostCat='일상', breathDone=false, curReelCat='all';
+let postsCache=[];
 
 // ── 유틸 ──────────────────────────────────
 const $=id=>document.getElementById(id);
@@ -90,8 +91,9 @@ const $qa=sel=>document.querySelectorAll(sel);
 // ── 아바타 ────────────────────────────────
 function getAvatarUrl(name,gender){
   const seed=encodeURIComponent(name||'마법사');
-  if(gender==='여') return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}&backgroundColor=b6e3f4,ffd5dc`;
-  return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&backgroundColor=b6e3f4,c0aede`;
+  if(gender==='여') return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}&skinColor=eac393,f5cfa0&backgroundColor=fde68a,fecaca,ddd6fe`;
+  if(gender==='남') return `https://api.dicebear.com/9.x/notionists/svg?seed=${seed}&backgroundColor=bfdbfe,bbf7d0,fef08a`;
+  return `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&backgroundColor=e0e7ff,fce7f3`;
 }
 
 // ── 물주기 ────────────────────────────────
@@ -551,40 +553,93 @@ async function loadPosts(cat){
   if(cat!==undefined) curReelCat=cat;
   $qa('.reel-filter .cat-btn').forEach(b=>b.classList.toggle('on',b.dataset.cat===curReelCat));
   const feed=$('feed');
-  feed.innerHTML='<div class="reel-empty">불러오는 중...</div>';
+  feed.className='feed-grid';
+  feed.innerHTML='<div class="feed-empty">불러오는 중...</div>';
   try{
     const r=await fetch('/api/posts?category='+curReelCat);
     const d=await r.json();
-    if(!d.posts?.length){feed.innerHTML='<div class="reel-empty">아직 게시글이 없어요<br>첫 번째 글을 남겨봐요 ✨</div>';return;}
+    if(!d.posts?.length){
+      postsCache=[];
+      feed.innerHTML='<div class="feed-empty">아직 게시글이 없어요<br>첫 번째 글을 남겨봐요 ✨</div>';
+      return;
+    }
+    postsCache=d.posts;
     feed.innerHTML=d.posts.map(p=>{
-      const mt=typeInfo(p.users?.magic_type);
-      const ago=timeAgo(p.created_at);
       const yid=p.yt_url?ytId(p.yt_url):'';
       const bg=yid
         ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg) center/cover no-repeat`
         :CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
-      const isOwner=me&&p.user_id===me.id;
-      const likes=p.likes||0;
-      return `<div class="reel-card" id="pc-${p.id}" style="background:${bg}">
-        <div class="reel-bg-overlay"></div>
-        <div class="reel-right">
-          <div class="reel-av" style="background:radial-gradient(circle,${p.users?.card_color||'#3d1a6b'},#1a0a3e)">${mt.e}</div>
-          ${CHEERS.slice(0,4).map((c,i)=>`<button class="reel-cheer-btn" onclick="sendCheer('${p.id}','${c}',this)" title="${c}">${['✨','💛','🌿','🔥'][i]}</button>`).join('')}
-          <div class="reel-likes">${likes}</div>
-        </div>
-        <div class="reel-bottom">
-          <div class="reel-user">
-            <span class="reel-nm">${p.users?.name||'익명'}</span>
-            <span class="reel-cat">${p.category}</span>
-            <span class="reel-time">${ago}</span>
-            ${isOwner?`<button class="reel-edit-btn" onclick="editPost('${p.id}',this)">수정</button>
-              <button class="reel-edit-btn" onclick="deletePost('${p.id}')" style="color:#e88">삭제</button>`:''}
-          </div>
-          <div class="reel-content" id="pb-${p.id}">${p.content}</div>
+      return `<div class="feed-tile" style="background:${bg}" onclick="openFeedDetail('${p.id}')">
+        <div class="feed-tile-overlay"></div>
+        <div class="feed-tile-info">
+          <span class="feed-tile-nm">${p.users?.name||'익명'}</span>
+          <span class="feed-tile-cat">${p.category}</span>
         </div>
       </div>`;
     }).join('');
-  }catch(e){feed.innerHTML='<div class="reel-empty">불러오기 실패 😢</div>';}
+  }catch(e){feed.innerHTML='<div class="feed-empty">불러오기 실패 😢</div>';}
+}
+function openFeedDetail(pid){
+  const p=postsCache.find(x=>String(x.id)===String(pid));
+  if(!p)return;
+  const mt=typeInfo(p.users?.magic_type);
+  const ago=timeAgo(p.created_at);
+  const yid=p.yt_url?ytId(p.yt_url):'';
+  const bg=yid
+    ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg) center/cover no-repeat`
+    :CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
+  const isOwner=me&&p.user_id===me.id;
+  const likes=p.likes||0;
+  $('feed-detail-body').innerHTML=`
+    <div class="detail-card" style="background:${bg}">
+      <div class="reel-bg-overlay"></div>
+      <button class="detail-close" onclick="closeFeedDetail()">✕</button>
+      <div class="reel-right">
+        <div class="reel-av" style="background:radial-gradient(circle,${p.users?.card_color||'#3d1a6b'},#1a0a3e)">${mt.e}</div>
+        ${CHEERS.slice(0,4).map((c,i)=>`<button class="reel-cheer-btn" onclick="sendCheer('${p.id}','${c}',this)" title="${c}">${['✨','💛','🌿','🔥'][i]}</button>`).join('')}
+        <div class="reel-likes">${likes}</div>
+      </div>
+      <div class="reel-bottom">
+        <div class="reel-user">
+          <span class="reel-nm">${p.users?.name||'익명'}</span>
+          <span class="reel-cat">${p.category}</span>
+          <span class="reel-time">${ago}</span>
+          ${isOwner?`<button class="reel-edit-btn" onclick="editFeedPost('${p.id}')">수정</button>
+            <button class="reel-edit-btn" onclick="deleteFeedPost('${p.id}')" style="color:#e88">삭제</button>`:''}
+        </div>
+        <div class="reel-content" id="fpb-${p.id}">${p.content}</div>
+      </div>
+    </div>`;
+  $('feed-detail-modal').style.display='flex';
+}
+function closeFeedDetail(){$('feed-detail-modal').style.display='none';}
+function editFeedPost(pid){
+  const el=$(`fpb-${pid}`);if(!el)return;
+  const cur=el.textContent;
+  el.innerHTML=`<textarea id="edit-fp-ta" class="inp" rows="3" style="width:100%;margin-bottom:6px">${cur}</textarea>
+    <div style="display:flex;gap:6px">
+      <button class="cheer-btn" onclick="saveFeedPost('${pid}')" style="font-size:11px;padding:4px 10px">저장</button>
+      <button class="cheer-btn" onclick="closeFeedDetail()" style="font-size:11px;padding:4px 10px">취소</button>
+    </div>`;
+}
+async function saveFeedPost(pid){
+  const content=($('edit-fp-ta')?.value||'').trim();
+  if(!content){toast('내용을 입력해주세요');return;}
+  try{
+    const r=await fetch(`/api/posts/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:me.id,content})});
+    const d=await r.json();
+    if(!r.ok||!d.ok) throw new Error(d.error||'오류');
+    toast('수정됐어요 ✨');closeFeedDetail();loadPosts();
+  }catch(e){toast('오류: '+e.message);}
+}
+async function deleteFeedPost(pid){
+  if(!confirm('게시글을 삭제할까요?'))return;
+  try{
+    const r=await fetch(`/api/posts/${pid}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:me.id})});
+    const d=await r.json();
+    if(!r.ok||!d.ok) throw new Error(d.error||'오류');
+    toast('삭제했어요');closeFeedDetail();loadPosts();
+  }catch(e){toast('오류: '+e.message);}
 }
 function ytId(url){
   const m=url.match(/(?:v=|youtu\.be\/)([^&\s]+)/);return m?m[1]:'';

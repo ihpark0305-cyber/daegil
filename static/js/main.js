@@ -91,9 +91,12 @@ const $qa=sel=>document.querySelectorAll(sel);
 // ── 아바타 ────────────────────────────────
 function getAvatarUrl(name,gender){
   const seed=encodeURIComponent(name||'마법사');
-  if(gender==='여') return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}&skinColor=eac393,f5cfa0&backgroundColor=fde68a,fecaca,ddd6fe`;
-  if(gender==='남') return `https://api.dicebear.com/9.x/notionists/svg?seed=${seed}&backgroundColor=bfdbfe,bbf7d0,fef08a`;
-  return `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&backgroundColor=e0e7ff,fce7f3`;
+  // 여: lorelei — 지브리풍 애니메이션 여성 캐릭터, 동양 피부톤
+  if(gender==='여') return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}&skinColor=eac393,f5cfa0&backgroundColor=b6e3f4,fecaca,ddd6fe,fde68a`;
+  // 남: adventurer — 애니메이션 스타일, 어두운 머리/동양 피부
+  if(gender==='남') return `https://api.dicebear.com/9.x/adventurer/svg?seed=${seed}&skinColor=eac393,f5cfa0&hairColor=0e0e0e,2c1b18,3b2314&backgroundColor=bfdbfe,bbf7d0,c7f2fa`;
+  // 기본: lorelei-neutral
+  return `https://api.dicebear.com/9.x/lorelei-neutral/svg?seed=${seed}&backgroundColor=e0e7ff,fce7f3,f0fdf4`;
 }
 
 // ── 물주기 ────────────────────────────────
@@ -566,10 +569,10 @@ async function loadPosts(cat){
     postsCache=d.posts;
     feed.innerHTML=d.posts.map(p=>{
       const yid=p.yt_url?ytId(p.yt_url):'';
-      const bg=yid
-        ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg) center/cover no-repeat`
+      const bgImg=yid
+        ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg)`
         :CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
-      return `<div class="feed-tile" style="background:${bg}" onclick="openFeedDetail('${p.id}')">
+      return `<div class="feed-tile" style="background-image:${bgImg}" onclick="openFeedDetail('${p.id}')">
         <div class="feed-tile-overlay"></div>
         <div class="feed-tile-info">
           <span class="feed-tile-nm">${p.users?.name||'익명'}</span>
@@ -585,13 +588,13 @@ function openFeedDetail(pid){
   const mt=typeInfo(p.users?.magic_type);
   const ago=timeAgo(p.created_at);
   const yid=p.yt_url?ytId(p.yt_url):'';
-  const bg=yid
-    ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg) center/cover no-repeat`
+  const bgImg=yid
+    ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg)`
     :CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
   const isOwner=me&&p.user_id===me.id;
   const likes=p.likes||0;
   $('feed-detail-body').innerHTML=`
-    <div class="detail-card" style="background:${bg}">
+    <div class="detail-card" style="background-image:${bgImg};background-size:cover;background-position:center">
       <div class="reel-bg-overlay"></div>
       <button class="detail-close" onclick="closeFeedDetail()">✕</button>
       <div class="reel-right">

@@ -953,6 +953,7 @@ function openEditCard(){
   $('edit-fav').value=me.favorite||'';
   $('edit-spell').value=me.my_spell||'';
   const eg=$('edit-gender');if(eg)eg.value=me.gender||'미선택';
+  const emt=$('edit-magic-type');if(emt)emt.value=me.magic_type||'';
   // 기존 사진 미리보기
   const prev=$('edit-photo-preview');
   const existingPhoto=me.photo_url||localStorage.getItem('my_photo');
@@ -990,12 +991,13 @@ async function saveEditCard(){
   const fav=$('edit-fav').value.trim();
   const spell=$('edit-spell').value.trim();
   const gender=$('edit-gender')?.value||me.gender||'미선택';
-  const payload={id:me.id,magic_skill:skill,favorite:fav,my_spell:spell,gender};
-  if(_editPhotoB64!==undefined) payload.photo_url=_editPhotoB64; // null이면 제거
+  const magicType=$('edit-magic-type')?.value||me.magic_type||'';
+  const payload={id:me.id,magic_skill:skill,favorite:fav,my_spell:spell,gender,magic_type:magicType||null};
+  if(_editPhotoB64!==undefined) payload.photo_url=_editPhotoB64;
   try{
     await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload)});
-    me.magic_skill=skill;me.favorite=fav;me.my_spell=spell;me.gender=gender;
+    me.magic_skill=skill;me.favorite=fav;me.my_spell=spell;me.gender=gender;me.magic_type=magicType||me.magic_type;
     if(_editPhotoB64!==undefined){
       me.photo_url=_editPhotoB64;
       if(_editPhotoB64)localStorage.setItem('my_photo',_editPhotoB64);

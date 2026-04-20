@@ -585,6 +585,8 @@ async function finishOnboard(){
   me.plant_type=plantType;if(photoUrl)me.photo_url=photoUrl;
   localStorage.setItem('me_cache',JSON.stringify(me));
   localStorage.setItem('onboard_complete','1'); // 온보딩 완료 표시
+  // 새 신분증 만들 때 이전 설문 완료 기록 초기화
+  Object.keys(localStorage).filter(k=>k.startsWith('survey_done_')).forEach(k=>localStorage.removeItem(k));
 }
 
 // ── 메인 진입 ──────────────────────────────

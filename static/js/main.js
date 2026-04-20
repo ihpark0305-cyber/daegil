@@ -584,6 +584,7 @@ async function finishOnboard(){
   me.favorite=fav;me.my_spell=spell;me.gender=selGender;
   me.plant_type=plantType;if(photoUrl)me.photo_url=photoUrl;
   localStorage.setItem('me_cache',JSON.stringify(me));
+  localStorage.setItem('onboard_complete','1'); // 온보딩 완료 표시
 }
 
 // ── 메인 진입 ──────────────────────────────
@@ -1220,7 +1221,13 @@ async function saveDiary(){
 spawnStars();
 spawnParticles();
 const savedName=localStorage.getItem('magic_name');
-if(savedName){enterAsUser(savedName);}
+const onboardDone=localStorage.getItem('onboard_complete');
+if(savedName&&onboardDone){enterAsUser(savedName);}
+// 이름만 있고 온보딩 미완료면 처음부터 시작
+else if(savedName&&!onboardDone){
+  localStorage.removeItem('magic_name');
+  localStorage.removeItem('me_cache');
+}
 
 // ── 관리자 ─────────────────────────────────
 let adminPw = null;
@@ -1416,6 +1423,16 @@ function resetMySession(){
   if(!confirm('내 로컬 세션을 초기화할까요?\n(서버 데이터는 유지됩니다)\n처음부터 다시 테스트됩니다.'))return;
   localStorage.removeItem('magic_name');
   localStorage.removeItem('me_cache');
+  localStorage.removeItem('my_photo');
+  localStorage.removeItem('onboard_complete');
   toast('✅ 초기화 완료! 2초 후 새로고침...');
   setTimeout(()=>location.reload(),2000);
+}
+function exitSession(){
+  if(!confirm('나가시겠어요?\n다음에 같은 이름으로 다시 입장할 수 있어요 😊'))return;
+  localStorage.removeItem('magic_name');
+  localStorage.removeItem('me_cache');
+  localStorage.removeItem('my_photo');
+  localStorage.removeItem('onboard_complete');
+  location.reload();
 }

@@ -178,7 +178,7 @@ def user_update():
     data = request.json or {}
     uid = data.get("id")
     upd = {}
-    for k in ["magic_type", "card_color", "magic_skill", "favorite", "my_spell", "gender", "plant_type", "activity_count"]:
+    for k in ["magic_type", "card_color", "magic_skill", "favorite", "my_spell", "gender", "plant_type", "activity_count", "photo_url"]:
         if k in data:
             upd[k] = data[k]
     if not uid or not upd:
@@ -346,7 +346,7 @@ def cheer_post(pid):
 def gallery():
     mtype = request.args.get("type", "all")
     try:
-        q = sb.table("users").select("id,name,magic_type,card_color,plant_stage,activity_count,magic_skill,favorite,my_spell,gender,plant_type").order("total_visits", desc=True).limit(100)
+        q = sb.table("users").select("id,name,magic_type,card_color,plant_stage,activity_count,magic_skill,favorite,my_spell,gender,plant_type,photo_url").order("total_visits", desc=True).limit(100)
         if mtype != "all":
             q = q.eq("magic_type", mtype)
         res = q.execute()
@@ -517,6 +517,51 @@ def delete_diary(diary_id):
     except Exception as e:
         print("DELETE DIARY ERROR:", e)
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/survey", methods=["POST"])
+def save_survey():
+    data = request.json or {}
+    uid = data.get("user_id")
+    if not uid:
+        return jsonify({"error": "로그인이 필요해요"}), 400
+    today = today_str()
+    try:
+        ex = sb.table("surveys").select("id").eq("user_id", uid).eq("survey_date", today).execute()
+        if ex.data:
+            return jsonify({"error": "오늘은 이미 제출했어요 😊"}), 400
+        sb.table("surveys").insert({
+            "user_id": uid,
+            "survey_date": today,
+            "q1": data.get("q1"), "q2": data.get("q2"),
+            "q3": data.get("q3"), "q4": data.get("q4"),
+            "q5": data.get("q5"), "q6": data.get("q6"),
+            "q7": data.get("q7"), "q8": data.get("q8"),
+            "created_at": datetime.now().isoformat(),
+        }).execute()
+        return jsonify({"ok": True})
+    except Exception as e:
+        print("SAVE SURVEY ERROR:", e)
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/admin/survey")
+def admin_survey():
+    pw = request.args.get("pw", "")
+    if pw != ADMIN_PW:
+        return jsonify({"error": "권한 없음"}), 401
+    try:
+        res = sb.table("surveys").select("*").order("created_at", desc=True).execute()
+        rows = res.data or []
+        count = len(rows)
+        avgs = {}
+        for q in ["q1","q2","q3","q4","q6","q7"]:
+            vals = [r[q] for r in rows if r.get(q) is not None]
+            avgs[q] = round(sum(vals)/len(vals), 1) if vals else None
+        yes_q5 = sum(1 for r in rows if r.get("q5") is True)
+        yes_q8 = sum(1 for r in rows if r.get("q8") is True)
+        return jsonify({"count": count, "avgs": avgs, "yes_q5": yes_q5, "yes_q8": yes_q8})
+    except Exception as e:
+        print("ADMIN SURVEY ERROR:", e)
+        return jsonify({"count": 0, "avgs": {}, "yes_q5": 0, "yes_q8": 0})
 
 @app.route("/api/admin/posts/<pid>", methods=["DELETE"])
 def admin_delete_post(pid):

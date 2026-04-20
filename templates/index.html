@@ -98,6 +98,7 @@
     <button class="nb" data-page="square" onclick="go('square')">🏛️ 광장</button>
     <button class="nb" data-page="gallery" onclick="go('gallery')">🖼️ 갤러리</button>
     <button class="nb" data-page="record" onclick="go('record')">📅 기록</button>
+    <button class="nb" data-page="survey" onclick="go('survey')">📋 설문</button>
     <button class="nb" data-page="admin" onclick="go('admin')">⚙️ 관리</button>
     <div class="nav-r">
       <span class="nav-plant" id="nav-plant">🌱</span>
@@ -185,6 +186,9 @@
     <div id="diary-list"></div>
   </div>
 
+  <!-- 설문 -->
+  <div id="page-survey" class="page" style="display:none;"></div>
+
   <!-- 관리자 -->
   <div id="page-admin" class="page" style="display:none;">
     <div class="section-title">⚙️ 관리자 화면</div>
@@ -217,8 +221,18 @@
 <div class="overlay" id="overlay-edit" style="display:none;">
   <div class="modal">
     <div class="modal-title">✏️ 신분증 수정</div>
+    <div class="sec"><label>📷 사진</label>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+        <div id="edit-photo-preview" style="width:72px;height:90px;border-radius:8px;overflow:hidden;border:2px solid var(--border2);flex-shrink:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:30px">📷</div>
+        <div style="flex:1">
+          <label class="upload-btn" for="edit-photo-inp" style="display:block;text-align:center;margin-bottom:6px">사진 선택</label>
+          <input type="file" id="edit-photo-inp" accept="image/*" style="display:none" onchange="previewEditPhoto(this)">
+          <button class="btn btn-ghost btn-xs w100" onclick="clearEditPhoto()">사진 제거</button>
+        </div>
+      </div>
+    </div>
     <div class="sec"><label>성 별</label>
-      <select class="inp" id="edit-gender" style="height:48px">
+      <select class="inp" id="edit-gender" style="height:50px">
         <option value="미선택">미선택</option>
         <option value="남">남</option>
         <option value="여">여</option>

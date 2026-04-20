@@ -319,6 +319,7 @@ function go(page){
   if(page==='square')  loadPosts();
   if(page==='gallery') loadGallery();
   if(page==='record')  renderRecord();
+  if(page==='survey')  renderSurvey();
   if(page==='admin')   renderAdmin();
   const fab=$('reels-fab');
   if(fab) fab.style.display=(page==='square')?'flex':'none';
@@ -881,9 +882,9 @@ async function loadGallery(type='all'){
     grid.innerHTML=d.users.map(u=>{
       const mt=typeInfo(u.magic_type);
       const isMe=me&&u.id===me.id;
-      const myPhoto=isMe?localStorage.getItem('my_photo'):null;
-      const photoEl=myPhoto
-        ?`<img src="${myPhoto}" class="idn-photo-img">`
+      const photoSrc=u.photo_url||(isMe?localStorage.getItem('my_photo'):null);
+      const photoEl=photoSrc
+        ?`<img src="${photoSrc}" class="idn-photo-img" style="object-fit:cover;width:100%;height:100%">`
         :getAvatarHtml(u.name,u.gender||'미선택');
       return `<div class="idn-card" style="--card-color:${u.card_color||'#1a4a1a'}">
         <div class="idn-hdr">
@@ -919,23 +920,63 @@ async function sendMagic(toId,msg){
     toast('✨ 마법을 보냈어요!');
   }catch(e){toast('오류가 발생했어요');}
 }
+let _editPhotoB64=undefined; // undefined=변경없음, null=제거, string=새사진
 function openEditCard(){
   if(!me)return;
+  _editPhotoB64=undefined;
   const ov=$('overlay-edit');ov.style.display='flex';ov.classList.add('on');
   $('edit-skill').value=me.magic_skill||'';
   $('edit-fav').value=me.favorite||'';
   $('edit-spell').value=me.my_spell||'';
   const eg=$('edit-gender');if(eg)eg.value=me.gender||'미선택';
+  // 기존 사진 미리보기
+  const prev=$('edit-photo-preview');
+  const existingPhoto=me.photo_url||localStorage.getItem('my_photo');
+  if(prev){prev.innerHTML=existingPhoto?`<img src="${existingPhoto}" style="width:100%;height:100%;object-fit:cover">`:'📷';}
+}
+function previewEditPhoto(inp){
+  const file=inp.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      // 캔버스로 압축 (최대 400px)
+      const canvas=document.createElement('canvas');
+      const maxS=400;
+      let w=img.width,h=img.height;
+      if(w>h){if(w>maxS){h=h*maxS/w;w=maxS;}}else{if(h>maxS){w=w*maxS/h;h=maxS;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const b64=canvas.toDataURL('image/jpeg',0.82);
+      _editPhotoB64=b64;
+      const prev=$('edit-photo-preview');
+      if(prev)prev.innerHTML=`<img src="${b64}" style="width:100%;height:100%;object-fit:cover">`;
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function clearEditPhoto(){
+  _editPhotoB64=null;
+  const prev=$('edit-photo-preview');if(prev)prev.innerHTML='📷';
+  const inp=$('edit-photo-inp');if(inp)inp.value='';
 }
 async function saveEditCard(){
   const skill=$('edit-skill').value.trim();
   const fav=$('edit-fav').value.trim();
   const spell=$('edit-spell').value.trim();
   const gender=$('edit-gender')?.value||me.gender||'미선택';
+  const payload={id:me.id,magic_skill:skill,favorite:fav,my_spell:spell,gender};
+  if(_editPhotoB64!==undefined) payload.photo_url=_editPhotoB64; // null이면 제거
   try{
     await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:me.id,magic_skill:skill,favorite:fav,my_spell:spell,gender})});
+      body:JSON.stringify(payload)});
     me.magic_skill=skill;me.favorite=fav;me.my_spell=spell;me.gender=gender;
+    if(_editPhotoB64!==undefined){
+      me.photo_url=_editPhotoB64;
+      if(_editPhotoB64)localStorage.setItem('my_photo',_editPhotoB64);
+      else localStorage.removeItem('my_photo');
+    }
     localStorage.setItem('me_cache',JSON.stringify(me));
     closeOverlay('overlay-edit');
     toast('신분증을 수정했어요 ✨');
@@ -943,6 +984,102 @@ async function saveEditCard(){
   }catch(e){toast('저장 실패');}
 }
 function closeOverlay(id){const ov=$(id);if(ov){ov.classList.remove('on');ov.style.display='none';}}
+
+// ── 설문 ───────────────────────────────────
+const SURVEY_QS=[
+  {id:'q1',section:'🧠 자기 이해',q:'본 활동을 통해 나 자신에 대해 더 잘 알게 된 것 같나요?',type:'scale'},
+  {id:'q2',section:'🧠 자기 이해',q:'면허증 제작을 통해 나 자신을 더 잘 표현할 수 있었나요?',type:'scale'},
+  {id:'q3',section:'🌬️ 이완 효과',q:'마법 호흡 활동 후 마음이 편안해졌나요?',type:'scale'},
+  {id:'q4',section:'🪪 신분증 제작',q:'나만의 신분증을 만드는 것이 즐거웠나요?',type:'scale'},
+  {id:'q5',section:'🪪 신분증 제작',q:'신분증을 완성했나요?',type:'yn'},
+  {id:'q6',section:'🤝 사회적 상호작용',q:'다른 마법사들의 신분증을 보는 것이 재미있었나요?',type:'scale'},
+  {id:'q7',section:'⭐ 전반 만족도',q:'오늘 활동이 나에게 도움이 되었나요?',type:'scale'},
+  {id:'q8',section:'⭐ 전반 만족도',q:'이 앱을 계속 이용하고 싶나요?',type:'yn'},
+];
+const SCALE_EMOJIS=['😞','😕','😐','🙂','😊'];
+
+async function renderSurvey(){
+  const pg=$('page-survey');if(!pg)return;
+  // 오늘 이미 제출했는지 확인 (로컬에서)
+  const today=new Date().toISOString().slice(0,10);
+  const doneKey='survey_done_'+today;
+  if(localStorage.getItem(doneKey)){
+    pg.innerHTML=`
+      <div class="section-title">📋 오늘의 만족도 설문</div>
+      <div class="survey-done-card">
+        <div style="font-size:56px;margin-bottom:16px">✅</div>
+        <div style="font-family:var(--f2);font-size:20px;color:var(--gold2);margin-bottom:10px">오늘 설문을 완료했어요!</div>
+        <div style="font-size:15px;color:var(--cream3);line-height:1.8">소중한 응답 감사해요 🌟<br>내일 또 참여할 수 있어요</div>
+      </div>`;
+    return;
+  }
+  // 섹션별로 그룹
+  const sections={};
+  SURVEY_QS.forEach(q=>{if(!sections[q.section])sections[q.section]=[];sections[q.section].push(q);});
+  const surveyHtml=Object.entries(sections).map(([sec,qs])=>`
+    <div class="survey-section">
+      <div class="survey-sec-title">${sec}</div>
+      ${qs.map(q=>q.type==='scale'?`
+        <div class="survey-item" id="item-${q.id}">
+          <div class="survey-q">${q.q}</div>
+          <div class="survey-scale">
+            ${SCALE_EMOJIS.map((em,i)=>`
+              <button class="scale-btn" data-q="${q.id}" data-v="${i+1}" onclick="pickScale('${q.id}',${i+1})">
+                <span class="scale-em">${em}</span>
+                <span class="scale-num">${i+1}점</span>
+              </button>`).join('')}
+          </div>
+        </div>` : `
+        <div class="survey-item" id="item-${q.id}">
+          <div class="survey-q">${q.q}</div>
+          <div class="survey-yn">
+            <button class="yn-btn" data-q="${q.id}" data-v="yes" onclick="pickYn('${q.id}',true)">✅ 예</button>
+            <button class="yn-btn" data-q="${q.id}" data-v="no" onclick="pickYn('${q.id}',false)">❌ 아니오</button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  pg.innerHTML=`
+    <div class="section-title">📋 오늘의 만족도 설문</div>
+    <div style="font-size:15px;color:var(--cream3);margin-bottom:4px;line-height:1.8">오늘 활동은 어떠셨나요?<br>솔직한 답변이 큰 도움이 돼요 💛</div>
+    ${surveyHtml}
+    <button class="btn btn-gold w100" onclick="submitSurvey()" id="survey-submit-btn">제출하기 ✨</button>`;
+}
+
+const _surveyAns={};
+function pickScale(qid,val){
+  _surveyAns[qid]=val;
+  document.querySelectorAll(`.scale-btn[data-q="${qid}"]`).forEach(b=>{
+    b.classList.toggle('sel',parseInt(b.dataset.v)===val);
+  });
+  document.getElementById('item-'+qid)?.classList.remove('survey-unanswered');
+}
+function pickYn(qid,val){
+  _surveyAns[qid]=val;
+  document.querySelectorAll(`.yn-btn[data-q="${qid}"]`).forEach(b=>{
+    b.classList.toggle('sel',(b.dataset.v==='yes')===val);
+  });
+  document.getElementById('item-'+qid)?.classList.remove('survey-unanswered');
+}
+async function submitSurvey(){
+  // 미응답 확인
+  const unanswered=SURVEY_QS.filter(q=>_surveyAns[q.id]===undefined);
+  if(unanswered.length){
+    unanswered.forEach(q=>document.getElementById('item-'+q.id)?.classList.add('survey-unanswered'));
+    toast('모든 문항에 답해주세요 🙏');return;
+  }
+  const btn=$('survey-submit-btn');btn.disabled=true;btn.textContent='제출 중...';
+  try{
+    const r=await fetch('/api/survey',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:me?.id,..._surveyAns})});
+    const d=await r.json();
+    if(d.error){toast(d.error);btn.disabled=false;btn.textContent='제출하기 ✨';return;}
+    const today=new Date().toISOString().slice(0,10);
+    localStorage.setItem('survey_done_'+today,'1');
+    confetti();toast('설문 완료! 감사해요 🌟');
+    renderSurvey();
+  }catch(e){toast('제출 실패');btn.disabled=false;btn.textContent='제출하기 ✨';}
+}
 
 // ── 기록 ───────────────────────────────────
 async function renderRecord(){
@@ -1105,6 +1242,11 @@ async function renderAdminPanel(){
       <div class="stage-btns" id="stage-btns"></div>
     </div>
 
+    <div class="admin-card" id="admin-survey-card" style="margin-bottom:14px">
+      <div class="admin-title">📋 만족도 설문 결과</div>
+      <div id="admin-survey-result"><div style="color:var(--cream3)">불러오는 중...</div></div>
+    </div>
+
     <div class="admin-card" style="margin-bottom:14px">
       <div class="admin-title">🗑️ 마법사 프로필 관리</div>
       <div id="admin-user-list"><div style="color:var(--cream3)">불러오는 중...</div></div>
@@ -1147,6 +1289,29 @@ async function renderAdminPanel(){
   try{const r=await fetch('/api/admin/stage');const d=await r.json();curStageText=d.stage;}catch(e){}
   $('stage-btns').innerHTML=ADMIN_STAGES.map(s=>`
     <button class="stage-btn ${curStageText===s?'on':''}" onclick="setStage('${s}')">${s}</button>`).join('');
+
+  // 설문 결과
+  try{
+    const sr=await fetch('/api/admin/survey?pw='+encodeURIComponent(adminPw||''));
+    const sd=await sr.json();
+    const qLabels={q1:'본 활동 자기 이해',q2:'면허증 자기 표현',q3:'호흡 이완 효과',q4:'신분증 즐거움',q6:'갤러리 상호작용',q7:'전반 도움됨'};
+    const avgRows=Object.entries(qLabels).map(([k,lbl])=>{
+      const v=sd.avgs?.[k];
+      const pct=v?Math.round((v/5)*100):0;
+      return `<div class="dist-row">
+        <span class="dist-label" style="font-size:12px;min-width:120px">${lbl}</span>
+        <div class="dist-bar-bg"><div class="dist-bar" style="width:${pct}%;background:var(--gold)"></div></div>
+        <span class="dist-cnt">${v??'-'}</span>
+      </div>`;
+    }).join('');
+    $('admin-survey-result').innerHTML=`
+      <div style="font-size:14px;color:var(--cream3);margin-bottom:12px">총 ${sd.count||0}건 응답</div>
+      <div class="dist-chart" style="margin-bottom:14px">${avgRows||'<div style="color:var(--cream3)">응답 없음</div>'}</div>
+      <div style="display:flex;gap:16px;font-size:14px;color:var(--cream2)">
+        <span>🪪 신분증 완성: <strong style="color:var(--gold)">${sd.yes_q5||0}명</strong></span>
+        <span>🔁 재참여 희망: <strong style="color:var(--gold)">${sd.yes_q8||0}명</strong></span>
+      </div>`;
+  }catch(e){if($('admin-survey-result'))$('admin-survey-result').innerHTML='<div style="color:var(--cream3)">불러오기 실패</div>';}
 
   // QR
   const url=location.origin;

@@ -133,57 +133,173 @@ async function waterPlant(){
 function renderPlantSVG(plantId,stage){
   const pt=PLANT_TYPES.find(p=>p.id===plantId)||PLANT_TYPES[0];
   const s=stage||0;
-  const c=pt.color, c2=pt.petal2, st=pt.stem;
-  const soil=`<ellipse cx="80" cy="188" rx="62" ry="13" fill="#3d2b1a"/>
-    <rect x="18" y="182" width="124" height="18" rx="6" fill="#4a3520"/>`;
-  let plant='';
-  if(s===0){
-    plant=`<ellipse cx="80" cy="178" rx="11" ry="8" fill="${st}" opacity=".8"/>
-      <line x1="80" y1="183" x2="80" y2="170" stroke="${st}" stroke-width="3" stroke-linecap="round"/>`;
-  } else if(s===1){
-    plant=`<line x1="80" y1="182" x2="80" y2="140" stroke="${st}" stroke-width="4" stroke-linecap="round"/>
-      <ellipse cx="63" cy="152" rx="16" ry="9" fill="${c}" opacity=".85" transform="rotate(-35,63,152)"/>
-      <ellipse cx="97" cy="152" rx="16" ry="9" fill="${c}" opacity=".85" transform="rotate(35,97,152)"/>`;
-  } else if(s===2){
-    plant=`<line x1="80" y1="182" x2="80" y2="112" stroke="${st}" stroke-width="5" stroke-linecap="round"/>
-      <ellipse cx="60" cy="140" rx="18" ry="10" fill="${st}" opacity=".7" transform="rotate(-35,60,140)"/>
-      <ellipse cx="100" cy="140" rx="18" ry="10" fill="${st}" opacity=".7" transform="rotate(35,100,140)"/>
-      <ellipse cx="58" cy="165" rx="16" ry="10" fill="${st}" opacity=".75" transform="rotate(-25,58,165)"/>
-      <ellipse cx="102" cy="165" rx="16" ry="10" fill="${st}" opacity=".75" transform="rotate(25,102,165)"/>`;
-  } else if(s===3){
-    plant=`<line x1="80" y1="182" x2="80" y2="88" stroke="${st}" stroke-width="6" stroke-linecap="round"/>
-      <ellipse cx="58" cy="128" rx="18" ry="11" fill="${st}" opacity=".75" transform="rotate(-30,58,128)"/>
-      <ellipse cx="102" cy="128" rx="18" ry="11" fill="${st}" opacity=".75" transform="rotate(30,102,128)"/>
-      <ellipse cx="80" cy="95" rx="13" ry="16" fill="${c}" opacity=".7"/>
-      <ellipse cx="80" cy="88" rx="9" ry="12" fill="${c2}" opacity=".9"/>`;
-  } else if(s===4){
-    const petals=[0,60,120,180,240,300].map(a=>{
-      const r=a*Math.PI/180,px=(80+Math.cos(r)*24).toFixed(1),py=(68+Math.sin(r)*24).toFixed(1);
-      return `<ellipse cx="${px}" cy="${py}" rx="15" ry="9" fill="${c}" opacity=".88" transform="rotate(${a},${px},${py})"/>`;
-    }).join('');
-    plant=`<line x1="80" y1="182" x2="80" y2="80" stroke="${st}" stroke-width="7" stroke-linecap="round"/>
-      <ellipse cx="56" cy="120" rx="18" ry="11" fill="${st}" opacity=".75" transform="rotate(-30,56,120)"/>
-      <ellipse cx="104" cy="120" rx="18" ry="11" fill="${st}" opacity=".75" transform="rotate(30,104,120)"/>
-      ${petals}
-      <circle cx="80" cy="68" r="13" fill="${c2}" opacity=".7"/>
-      <circle cx="80" cy="68" r="8" fill="#ffd700"/>`;
-  } else {
-    const petals=[0,45,90,135,180,225,270,315].map(a=>{
-      const r=a*Math.PI/180,px=(80+Math.cos(r)*30).toFixed(1),py=(55+Math.sin(r)*30).toFixed(1);
-      return `<ellipse cx="${px}" cy="${py}" rx="18" ry="10" fill="${c}" opacity=".92" transform="rotate(${a},${px},${py})"/>`;
-    }).join('');
-    plant=`<defs><filter id="glow"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-      <line x1="80" y1="182" x2="80" y2="68" stroke="${st}" stroke-width="8" stroke-linecap="round" filter="url(#glow)"/>
-      <ellipse cx="53" cy="112" rx="20" ry="12" fill="${st}" opacity=".8" transform="rotate(-30,53,112)"/>
-      <ellipse cx="107" cy="112" rx="20" ry="12" fill="${st}" opacity=".8" transform="rotate(30,107,112)"/>
-      <ellipse cx="50" cy="145" rx="17" ry="10" fill="${st}" opacity=".7" transform="rotate(-20,50,145)"/>
-      <ellipse cx="110" cy="145" rx="17" ry="10" fill="${st}" opacity=".7" transform="rotate(20,110,145)"/>
-      ${petals}
-      <circle cx="80" cy="55" r="18" fill="${c2}" opacity=".75" filter="url(#glow)"/>
-      <circle cx="80" cy="55" r="11" fill="#ffd700" filter="url(#glow)"/>
-      <circle cx="80" cy="55" r="5" fill="#fff"/>`;
+  const c=pt.color, c2=pt.petal2, stemCol=pt.stem;
+
+  // 공통 defs: 그라디언트 + 필터
+  const uid=plantId.replace(/[^a-z]/gi,'')+(s||0);
+  const defs=`<defs>
+    <radialGradient id="sg${uid}" cx="40%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#b87333"/>
+      <stop offset="55%" stop-color="#7a4a1a"/>
+      <stop offset="100%" stop-color="#3e2008"/>
+    </radialGradient>
+    <linearGradient id="stemG${uid}" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="${stemCol}" stop-opacity=".7"/>
+      <stop offset="40%" stop-color="${stemCol}"/>
+      <stop offset="100%" stop-color="${stemCol}" stop-opacity=".8"/>
+    </linearGradient>
+    <radialGradient id="leafG${uid}" cx="35%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#8bc34a"/>
+      <stop offset="60%" stop-color="${stemCol}"/>
+      <stop offset="100%" stop-color="#1b5e20"/>
+    </radialGradient>
+    <radialGradient id="petalG${uid}" cx="30%" cy="20%" r="75%">
+      <stop offset="0%" stop-color="${c2}"/>
+      <stop offset="55%" stop-color="${c}"/>
+      <stop offset="100%" stop-color="${c}" stop-opacity=".6"/>
+    </radialGradient>
+    <radialGradient id="budG${uid}" cx="40%" cy="25%" r="65%">
+      <stop offset="0%" stop-color="${c2}"/>
+      <stop offset="100%" stop-color="${c}" stop-opacity=".8"/>
+    </radialGradient>
+    <filter id="dropshadow${uid}" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,.4)"/>
+    </filter>
+    <filter id="glow${uid}" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="soilG${uid}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6d4c2a"/>
+      <stop offset="100%" stop-color="#3e2308"/>
+    </linearGradient>
+  </defs>`;
+
+  // 흙
+  const soil=`
+    <ellipse cx="80" cy="186" rx="62" ry="12" fill="url(#soilG${uid})" filter="url(#dropshadow${uid})"/>
+    <ellipse cx="80" cy="183" rx="58" ry="8" fill="#8d6239" opacity=".45"/>
+    <path d="M38 183 Q55 178 80 180 Q105 178 122 183" stroke="#5d3d1e" stroke-width="1.2" fill="none" opacity=".5"/>`;
+
+  // 잎 path 헬퍼 (곡선 잎)
+  function leaf(x,y,angle,size,flip){
+    const s2=size||18;
+    const f=flip?-1:1;
+    return `<g transform="translate(${x},${y}) rotate(${angle})">
+      <path d="M0 0 C${f*s2*0.6} ${-s2*0.9} ${f*s2*1.1} ${-s2*0.5} ${f*s2*0.8} 0 C${f*s2*0.5} ${s2*0.4} ${f*s2*0.1} ${s2*0.15} 0 0Z"
+        fill="url(#leafG${uid})" opacity=".92"/>
+      <path d="M0 0 L${f*s2*0.55} ${-s2*0.55}" stroke="#2e7d32" stroke-width=".9" fill="none" opacity=".5"/>
+    </g>`;
   }
-  return `<svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;max-width:200px">${soil}${plant}</svg>`;
+
+  // 줄기 path (살짝 곡선)
+  function stem(x1,y1,x2,y2,w){
+    const mx=(x1+x2)/2+((Math.random()>.5?1:-1)*3);
+    return `<path d="M${x1} ${y1} Q${mx} ${(y1+y2)/2} ${x2} ${y2}"
+      stroke="url(#stemG${uid})" stroke-width="${w}" stroke-linecap="round" fill="none"/>
+      <path d="M${x1+1} ${y1} Q${mx+1} ${(y1+y2)/2} ${x2+1} ${y2}"
+      stroke="rgba(255,255,255,.12)" stroke-width="${w*0.3}" stroke-linecap="round" fill="none"/>`;
+  }
+
+  let plant='';
+
+  if(s===0){
+    // 씨앗: 실사 타원 씨앗
+    plant=`
+      ${stem(80,182,80,174,2.5)}
+      <ellipse cx="80" cy="170" rx="12" ry="9" fill="url(#sg${uid})" filter="url(#dropshadow${uid})"/>
+      <path d="M80 161 Q83 165 80 179" stroke="rgba(0,0,0,.2)" stroke-width=".8" fill="none"/>
+      <ellipse cx="77" cy="167" rx="3" ry="5" fill="rgba(255,255,255,.12)" transform="rotate(-15,77,167)"/>`;
+
+  } else if(s===1){
+    // 새싹: 가는 줄기 + 작은 떡잎
+    plant=`
+      ${stem(80,182,80,148,3.5)}
+      ${leaf(72,156,-50,14,false)}
+      ${leaf(88,156,50,14,true)}
+      <ellipse cx="80" cy="145" rx="4" ry="5" fill="#a5d6a7" opacity=".8"/>
+      <path d="M76 149 Q80 143 84 149" stroke="#81c784" stroke-width="1" fill="none"/>`;
+
+  } else if(s===2){
+    // 잎사귀: 중간 줄기 + 잎 4장
+    plant=`
+      ${stem(80,182,80,118,5)}
+      ${leaf(67,158,-45,17)}
+      ${leaf(93,158,45,17,true)}
+      ${leaf(62,138,-38,16)}
+      ${leaf(98,138,38,16,true)}
+      <path d="M80 182 Q82 160 80 118" stroke="rgba(255,255,255,.08)" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+
+  } else if(s===3){
+    // 꽃봉오리: 튼튼한 줄기 + 잎 4-6장 + 봉오리
+    plant=`
+      ${stem(80,182,80,95,6.5)}
+      ${leaf(62,160,-42,19)}
+      ${leaf(98,160,42,19,true)}
+      ${leaf(57,138,-35,17)}
+      ${leaf(103,138,35,17,true)}
+      <ellipse cx="80" cy="104" rx="7" ry="9" fill="#2e7d32" opacity=".9"/>
+      <ellipse cx="74" cy="107" rx="5" ry="9" fill="#388e3c" opacity=".8" transform="rotate(-20,74,107)"/>
+      <ellipse cx="86" cy="107" rx="5" ry="9" fill="#388e3c" opacity=".8" transform="rotate(20,86,107)"/>
+      <ellipse cx="80" cy="93" rx="10" ry="14" fill="url(#budG${uid})" filter="url(#dropshadow${uid})"/>
+      <ellipse cx="77" cy="88" rx="3" ry="7" fill="rgba(255,255,255,.18)" transform="rotate(-10,77,88)"/>`;
+
+  } else if(s===4){
+    // 활짝 핀 꽃
+    const petals=[0,51,102,153,204,255,306].map((a,i)=>{
+      const r=a*Math.PI/180;
+      const dist=22;
+      const px=(80+Math.cos(r)*dist).toFixed(1);
+      const py=(72+Math.sin(r)*dist).toFixed(1);
+      return `<ellipse cx="${px}" cy="${py}" rx="13" ry="8"
+        fill="url(#petalG${uid})" opacity=".9"
+        transform="rotate(${a},${px},${py})"
+        filter="url(#dropshadow${uid})"/>`;
+    }).join('');
+    plant=`
+      ${stem(80,182,80,85,7)}
+      ${leaf(58,130,-40,20)}
+      ${leaf(102,130,40,20,true)}
+      ${leaf(54,155,-30,17)}
+      ${leaf(106,155,30,17,true)}
+      ${petals}
+      <circle cx="80" cy="72" r="12" fill="${c2}" opacity=".85" filter="url(#dropshadow${uid})"/>
+      <circle cx="80" cy="72" r="7" fill="#ffd54f"/>
+      <circle cx="80" cy="72" r="3.5" fill="#ff8f00"/>
+      ${[0,72,144,216,288].map(a=>{const r=a*Math.PI/180;return `<circle cx="${(80+Math.cos(r)*9).toFixed(1)}" cy="${(72+Math.sin(r)*9).toFixed(1)}" r="1.8" fill="#ffd54f" opacity=".7"/>`;}).join('')}`;
+
+  } else {
+    // 마법의 나무: 성숙한 나무 + 마법 효과
+    const petals=[0,40,80,120,160,200,240,280,320].map(a=>{
+      const r=a*Math.PI/180;
+      const dist=26;
+      const px=(80+Math.cos(r)*dist).toFixed(1);
+      const py=(52+Math.sin(r)*dist).toFixed(1);
+      return `<ellipse cx="${px}" cy="${py}" rx="15" ry="9"
+        fill="url(#petalG${uid})" opacity=".93"
+        transform="rotate(${a},${px},${py})"/>`;
+    }).join('');
+    plant=`
+      <path d="M74 182 Q71 155 70 130 Q68 105 72 80" stroke="#5d4037" stroke-width="10" stroke-linecap="round" fill="none"/>
+      <path d="M86 182 Q89 155 90 130 Q92 105 88 80" stroke="#4e342e" stroke-width="10" stroke-linecap="round" fill="none"/>
+      <path d="M80 182 Q80 145 80 80" stroke="#795548" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M80 140 Q62 128 48 118" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M80 125 Q98 112 112 104" stroke="#5d4037" stroke-width="5" stroke-linecap="round" fill="none"/>
+      <path d="M80 108 Q65 95 55 84" stroke="#4e342e" stroke-width="4" stroke-linecap="round" fill="none"/>
+      ${leaf(50,117,-55,22)}${leaf(112,103,55,22,true)}${leaf(55,83,-45,19)}
+      ${leaf(58,148,-38,19)}${leaf(100,148,38,19,true)}
+      ${leaf(68,165,-25,16)}${leaf(92,165,25,16,true)}
+      <ellipse cx="80" cy="52" rx="28" ry="24" fill="${stemCol}" opacity=".25" filter="url(#glow${uid})"/>
+      ${petals}
+      <circle cx="80" cy="52" r="14" fill="${c2}" opacity=".88" filter="url(#glow${uid})"/>
+      <circle cx="80" cy="52" r="8" fill="#ffe082"/>
+      <circle cx="80" cy="52" r="4" fill="#fff" opacity=".9"/>
+      <g filter="url(#glow${uid})">
+        ${[[-16,-22],[18,-28],[-22,5],[22,8],[-6,-38],[8,-36]].map(([dx,dy])=>`<text x="${80+dx}" y="${52+dy}" font-size="8" fill="${c2}" opacity=".8" text-anchor="middle">✦</text>`).join('')}
+      </g>`;
+  }
+
+  return `<svg viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;max-width:200px">${defs}${soil}${plant}</svg>`;
 }
 
 function toast(msg,dur=2600){

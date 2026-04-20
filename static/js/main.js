@@ -677,7 +677,10 @@ async function deleteFeedPost(pid){
   }catch(e){toast('오류: '+e.message);}
 }
 function ytId(url){
-  const m=url.match(/(?:v=|youtu\.be\/)([^&\s]+)/);return m?m[1]:'';
+  // YouTube ID는 항상 11자리 [a-zA-Z0-9_-]
+  // watch?v=, youtu.be/, shorts/, embed/ 모두 지원
+  const m=url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m?m[1]:'';
 }
 function timeAgo(iso){
   const d=Date.now()-new Date(iso).getTime(),m=0|d/60000;

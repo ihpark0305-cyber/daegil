@@ -1425,6 +1425,7 @@ function resetMySession(){
   localStorage.removeItem('me_cache');
   localStorage.removeItem('my_photo');
   localStorage.removeItem('onboard_complete');
+  Object.keys(localStorage).filter(k=>k.startsWith('survey_done_')).forEach(k=>localStorage.removeItem(k));
   toast('✅ 초기화 완료! 2초 후 새로고침...');
   setTimeout(()=>location.reload(),2000);
 }
@@ -1434,5 +1435,6 @@ function exitSession(){
   localStorage.removeItem('me_cache');
   localStorage.removeItem('my_photo');
   localStorage.removeItem('onboard_complete');
+  Object.keys(localStorage).filter(k=>k.startsWith('survey_done_')).forEach(k=>localStorage.removeItem(k));
   location.reload();
 }

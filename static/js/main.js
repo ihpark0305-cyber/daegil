@@ -589,31 +589,62 @@ function openFeedDetail(pid){
   const mt=typeInfo(p.users?.magic_type);
   const ago=timeAgo(p.created_at);
   const yid=p.yt_url?ytId(p.yt_url):'';
-  const bgImg=yid
-    ?`url(https://img.youtube.com/vi/${yid}/maxresdefault.jpg)`
-    :CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
   const isOwner=me&&p.user_id===me.id;
   const likes=p.likes||0;
-  $('feed-detail-body').innerHTML=`
-    <div class="detail-card" style="background-image:${bgImg};background-size:cover;background-position:center">
-      <div class="reel-bg-overlay"></div>
-      <button class="detail-close" onclick="closeFeedDetail()">✕</button>
-      <div class="reel-right">
-        <div class="reel-av" style="background:radial-gradient(circle,${p.users?.card_color||'#3d1a6b'},#1a0a3e)">${mt.e}</div>
-        ${CHEERS.slice(0,4).map((c,i)=>`<button class="reel-cheer-btn" onclick="sendCheer('${p.id}','${c}',this)" title="${c}">${['✨','💛','🌿','🔥'][i]}</button>`).join('')}
-        <div class="reel-likes">${likes}</div>
-      </div>
-      <div class="reel-bottom">
-        <div class="reel-user">
-          <span class="reel-nm">${p.users?.name||'익명'}</span>
-          <span class="reel-cat">${p.category}</span>
-          <span class="reel-time">${ago}</span>
-          ${isOwner?`<button class="reel-edit-btn" onclick="editFeedPost('${p.id}')">수정</button>
-            <button class="reel-edit-btn" onclick="deleteFeedPost('${p.id}')" style="color:#e88">삭제</button>`:''}
+  const cheerBtns=CHEERS.slice(0,4).map((c,i)=>`<button class="reel-cheer-btn" onclick="sendCheer('${p.id}','${c}',this)" title="${c}">${['✨','💛','🌿','🔥'][i]}</button>`).join('');
+  const ownerBtns=isOwner?`<button class="reel-edit-btn" onclick="editFeedPost('${p.id}')">수정</button><button class="reel-edit-btn" onclick="deleteFeedPost('${p.id}')" style="color:#e88">삭제</button>`:'';
+
+  if(yid){
+    // YouTube 영상: iframe 재생 + 하단 정보
+    $('feed-detail-body').innerHTML=`
+      <div class="detail-card detail-card-yt">
+        <button class="detail-close" onclick="closeFeedDetail()">✕</button>
+        <div class="yt-embed-wrap">
+          <iframe src="https://www.youtube.com/embed/${yid}?rel=0&playsinline=1"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
         </div>
-        <div class="reel-content" id="fpb-${p.id}">${p.content}</div>
-      </div>
-    </div>`;
+        <div class="yt-detail-bottom">
+          <div class="yt-detail-right">
+            <div class="reel-av" style="background:radial-gradient(circle,${p.users?.card_color||'#3d1a6b'},#1a0a3e)">${mt.e}</div>
+            ${cheerBtns}
+            <div class="reel-likes">${likes}</div>
+          </div>
+          <div class="yt-detail-info">
+            <div class="reel-user">
+              <span class="reel-nm">${p.users?.name||'익명'}</span>
+              <span class="reel-cat">${p.category}</span>
+              <span class="reel-time">${ago}</span>
+              ${ownerBtns}
+            </div>
+            <div class="reel-content" id="fpb-${p.id}">${p.content}</div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    // 일반 게시글: 그라디언트 배경
+    const bgImg=CAT_GRADIENTS[p.category]||CAT_GRADIENTS['all'];
+    $('feed-detail-body').innerHTML=`
+      <div class="detail-card" style="background-image:${bgImg};background-size:cover;background-position:center">
+        <div class="reel-bg-overlay"></div>
+        <button class="detail-close" onclick="closeFeedDetail()">✕</button>
+        <div class="reel-right">
+          <div class="reel-av" style="background:radial-gradient(circle,${p.users?.card_color||'#3d1a6b'},#1a0a3e)">${mt.e}</div>
+          ${cheerBtns}
+          <div class="reel-likes">${likes}</div>
+        </div>
+        <div class="reel-bottom">
+          <div class="reel-user">
+            <span class="reel-nm">${p.users?.name||'익명'}</span>
+            <span class="reel-cat">${p.category}</span>
+            <span class="reel-time">${ago}</span>
+            ${ownerBtns}
+          </div>
+          <div class="reel-content" id="fpb-${p.id}">${p.content}</div>
+        </div>
+      </div>`;
+  }
   $('feed-detail-modal').style.display='flex';
 }
 function closeFeedDetail(){$('feed-detail-modal').style.display='none';}

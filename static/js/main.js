@@ -568,17 +568,22 @@ async function finishOnboard(){
   const spell=($('prof-spell')?.value||'').trim();
   const plantType=PLANT_TYPES[Math.floor(Math.random()*PLANT_TYPES.length)].id;
   const photoUrl=localStorage.getItem('my_photo')||null;
+
+  // 1단계: 먼저 서버에 유저 등록해서 진짜 UUID 확보
+  await enterAsUser(name);
+
+  // 2단계: 진짜 ID(me.id)로 프로필 데이터 저장
   try{
     await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:me?.id,magic_type:selType,card_color:selColor,magic_skill:skill,favorite:fav,my_spell:spell,gender:selGender,plant_type:plantType,photo_url:photoUrl})});
+      body:JSON.stringify({id:me.id,magic_type:selType,card_color:selColor,magic_skill:skill,
+        favorite:fav,my_spell:spell,gender:selGender,plant_type:plantType,photo_url:photoUrl})});
   }catch(e){console.error('finishOnboard update error',e);}
-  if(me){
-    me.magic_type=selType;me.card_color=selColor;me.magic_skill=skill;
-    me.favorite=fav;me.my_spell=spell;me.gender=selGender;
-    me.plant_type=plantType;me.photo_url=photoUrl;
-  }
+
+  // 3단계: 로컬 me에도 반영
+  me.magic_type=selType;me.card_color=selColor;me.magic_skill=skill;
+  me.favorite=fav;me.my_spell=spell;me.gender=selGender;
+  me.plant_type=plantType;if(photoUrl)me.photo_url=photoUrl;
   localStorage.setItem('me_cache',JSON.stringify(me));
-  enterAsUser(name);
 }
 
 // ── 메인 진입 ──────────────────────────────

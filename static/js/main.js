@@ -537,10 +537,23 @@ function handlePhotoUpload(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=e=>{
-    localStorage.setItem('my_photo',e.target.result);
-    const prev=$('photo-preview');
-    if(prev){prev.src=e.target.result;prev.style.display='block';}
-    toast('사진이 등록됐어요 📷');
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.createElement('canvas');
+      const maxS=400;
+      let w=img.width,h=img.height;
+      if(w>h){if(w>maxS){h=h*maxS/w;w=maxS;}}else{if(h>maxS){w=w*maxS/h;h=maxS;}}
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const b64=canvas.toDataURL('image/jpeg',0.82);
+      localStorage.setItem('my_photo',b64);
+      const prev=$('photo-preview');
+      if(prev){
+        prev.outerHTML=`<img id="photo-preview" src="${b64}" style="width:88px;height:110px;object-fit:cover;border-radius:10px;border:2px solid var(--gold3)">`;
+      }
+      toast('사진이 등록됐어요 📷');
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -554,11 +567,17 @@ async function finishOnboard(){
   const fav=($('prof-fav')?.value||'').trim();
   const spell=($('prof-spell')?.value||'').trim();
   const plantType=PLANT_TYPES[Math.floor(Math.random()*PLANT_TYPES.length)].id;
+  const photoUrl=localStorage.getItem('my_photo')||null;
   try{
     await fetch('/api/user/update',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({id:me?.id,magic_type:selType,card_color:selColor,magic_skill:skill,favorite:fav,my_spell:spell,gender:selGender,plant_type:plantType})});
-  }catch(e){}
-  if(me){me.magic_type=selType;me.card_color=selColor;me.magic_skill=skill;me.favorite=fav;me.my_spell=spell;me.gender=selGender;me.plant_type=plantType;}
+      body:JSON.stringify({id:me?.id,magic_type:selType,card_color:selColor,magic_skill:skill,favorite:fav,my_spell:spell,gender:selGender,plant_type:plantType,photo_url:photoUrl})});
+  }catch(e){console.error('finishOnboard update error',e);}
+  if(me){
+    me.magic_type=selType;me.card_color=selColor;me.magic_skill=skill;
+    me.favorite=fav;me.my_spell=spell;me.gender=selGender;
+    me.plant_type=plantType;me.photo_url=photoUrl;
+  }
+  localStorage.setItem('me_cache',JSON.stringify(me));
   enterAsUser(name);
 }
 
@@ -569,7 +588,12 @@ async function enterAsUser(name,anon=false){
       body:JSON.stringify({name,anon})});
     const d=await r.json();
     if(d.error)throw new Error(d.error);
-    me=d.user;
+    // 서버 데이터를 기본으로 하되, 로컬에서 방금 저장한 값(me)이 있으면 우선 유지
+    const prev=me||{};
+    me=Object.assign({},d.user);
+    // 방금 onboard에서 입력한 필드는 서버 응답이 null이면 로컬값 사용
+    const keepFields=['magic_type','card_color','magic_skill','favorite','my_spell','gender','plant_type','photo_url'];
+    keepFields.forEach(k=>{if(!me[k]&&prev[k])me[k]=prev[k];});
     localStorage.setItem('me_cache',JSON.stringify(me));
     if(anon)localStorage.setItem('magic_name',me.name);
   }catch(e){
